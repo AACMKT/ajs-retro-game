@@ -65,3 +65,60 @@ export function calcHealthLevel(health) {
 
   return 'high';
 }
+
+export function toolTipContent(adventure) {
+  let level = adventure.level;
+  let attack =  adventure.attack;
+  let defence =  adventure.defence;
+  let health = adventure.health;
+  return `\u{1F396}` + `${level} ` + `\u{2694}` + `${attack} ` + `\u{1F6E1}` + `${defence} ` + `\u{2764}` + `${health}`
+
+}
+
+export function getActionsRange(flag, char, boardSize) {
+  if (char != NaN) {
+    let index = char.position;
+    let range = 0;
+    let board = boardSize
+    if (flag == 'move'){
+      range = char.character.moveRange;
+    }
+    else if (flag == 'attack') {
+      range = char.character.attackRange;
+    }
+    else {
+      throw new SyntaxError('Choose proper action flag (move or attack)!')
+    }
+    let cellsToAct = [];
+    for (let i = 0; i < board; i += 1){
+      let currentRow = [];
+      let row = i*8
+      for (let cell = 0 + row; cell < 8 + row; cell += 1) {
+        currentRow.push(cell);
+      }
+      cellsToAct.push(currentRow);
+    }
+    let charRowIndex = cellsToAct.findIndex(row => row.includes(index));
+    let charInRowIndex = (cellsToAct.filter(row => row.includes(index)).flat()).indexOf(index);
+    let startRow = charRowIndex < range ? 0 : charRowIndex - range;
+    if (board - charRowIndex - 1 > range){
+      let endRow = startRow == 0 ? charRowIndex + range + 1 : 2*range + 1;
+      cellsToAct = cellsToAct.splice(startRow, endRow)
+    }
+    else {
+      cellsToAct = cellsToAct.splice(startRow)
+    }
+    let startCell = charInRowIndex - range > 0 ? charInRowIndex - range : 0;
+    if (board - charInRowIndex - 1 > range){
+      let endCell = startCell == 0 ? charInRowIndex + range + 1 : 2*range + 1;
+      cellsToAct.forEach((r, i) => {cellsToAct[i] = r.splice(startCell, endCell)});
+    }
+    else {
+      cellsToAct.forEach((r, i) => {cellsToAct[i] = r.splice(startCell)});
+    }
+    return cellsToAct.flat()
+  }
+  else {
+    return []
+  }
+}

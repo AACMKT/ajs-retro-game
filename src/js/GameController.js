@@ -1,6 +1,7 @@
 import GamePlay from './GamePlay';
 import PositionedCharacter from './PositionedCharacter';
 import { generateTeam, findStartPoints } from './generators';
+import { toolTipContent, getActionsRange } from './utils';
 import Bowman from './characters/Bowman';
 import Daemon from './characters/Daemon';
 import Magician from './characters/Magician';
@@ -19,6 +20,7 @@ export default class GameController {
     this.playerTurn = true;
     this.cursorState = '';
     this.currentIndex = NaN;
+    this.boardSize = this.gamePlay.boardSize;
   }
 
   init() {
@@ -35,10 +37,8 @@ export default class GameController {
 
   saveGame() {
     this.gamePlay.gameState.positionedAdventures = this.charsArray;
-    console.log( this.gamePlay.gameState.positionedAdventures)
     this.gamePlay.gameState.focusedChar = this.focusedChar;
     this.stateService.save(this.gamePlay.gameState);
-    console.log(localStorage)
   }
 
   loadGame() {
@@ -65,15 +65,14 @@ export default class GameController {
     this.charsArray = [];
     this.charsArray = data.positionedAdventures;
     this.gamePlay.redrawPositions(this.charsArray);
-    console.log(data.focusedChar)
     if (data.focusedChar && data.focusedChar != NaN){
       this.focusedChar = data.positionedAdventures.find(char => char.position == data.focusedChar.position);
-      console.log(data.positionedAdventures)
       this.gamePlay.selectCell(this.focusedChar.position)
     }
     else {
       this.focusedChar = NaN
     }
+    this.playerTurn = data.playerTurn;
   }
 
   newGame() {
@@ -89,7 +88,6 @@ export default class GameController {
   }
 
   modalResponse(event) {
-    console.log(event)
     if (event.target.id == 'new-game') {
       this.gamePlay.modal.classList.remove('modal_visibility');
       while (this.gamePlay.modal.firstChild) {
@@ -110,15 +108,6 @@ export default class GameController {
     }
   }
 
-  message(adventure) {
-    let level = adventure.level;
-    let attack =  adventure.attack;
-    let defence =  adventure.defence;
-    let health = adventure.health;
-    return `\u{1F396}` + `${level} ` + `\u{2694}` + `${attack} ` + `\u{1F6E1}` + `${defence} ` + `\u{2764}` + `${health}`
- 
-  }
-
   isHero(adventure) {
     let isHero = false
     this.heroes.forEach(char => {
@@ -137,7 +126,7 @@ export default class GameController {
     return isSelected;
   }
 
-  getActionsRange(flag, char = this.focusedChar) {
+  /*getActionsRange(flag, char = this.focusedChar) {
     if (this.focusedChar) {
       let index = char.position;
       let range = 0;
@@ -183,7 +172,7 @@ export default class GameController {
     else {
       return []
     }
-  }
+  }*/
 
   getPositionedVillians() {
     let positionedVillians = [];
@@ -217,7 +206,7 @@ export default class GameController {
         if (villian.character.health > 0) {
           let heroesUnderAttack = []
           positionedHeroes.forEach(hero => {
-            if (this.getActionsRange('attack', villian).includes(hero.position)) {
+            if (getActionsRange('attack', villian, this.boardSize).includes(hero.position)) {
               heroesUnderAttack.push(hero);
             }
             if (heroesUnderAttack.length > 0) {
@@ -244,11 +233,11 @@ export default class GameController {
     let heroesPositions = this.getPositionedHeroes().map(hero => hero.position);
     let charactersPositions = this.charsArray.map(char => char.position);
     let villianPosition = villian.position;
-    let villianMoveRange = this.getActionsRange('move', villian).filter(el => !charactersPositions.includes(el));
-    if ((this.getActionsRange('attack', villian).length > 9)) {
+    let villianMoveRange = getActionsRange('move', villian, this.boardSize).filter(el => !charactersPositions.includes(el));
+    if ((getActionsRange('attack', villian, this.boardSize).length > 9)) {
       let safetyRange = [];
       heroesPositions.forEach(position => {
-        let range = this.getActionsRange('attack', {character: new Swordsman(1), position: position});
+        let range = getActionsRange('attack', {character: new Swordsman(1), position: position}, this.boardSize);
         safetyRange = safetyRange.concat(range);
       });
       villianMoveRange = villianMoveRange.filter(el => !safetyRange.includes(el))
@@ -297,7 +286,7 @@ export default class GameController {
       let target = this.gamePlay.cells[index];
       if (this.isSelected()) {
         if (!target.hasChildNodes()){
-          if (this.getActionsRange('move').includes(index)) {
+          if (getActionsRange('move', this.focusedChar, this.boardSize).includes(index)) {
             this.playerTurn = false;
             this.charsArray.splice(this.charsArray.indexOf(this.focusedChar), 1);
             this.gamePlay.deselectCell(this.focusedChar.position);
@@ -312,17 +301,17 @@ export default class GameController {
           let villain = this.charsArray.find((char) => char.position == index);
           let hero = this.focusedChar.character;
           if (hero != NaN) {
-            if (!this.isHero(villain.character) && this.getActionsRange('attack').includes(index)) {
+            if (!this.isHero(villain.character) && getActionsRange('attack', this.focusedChar, this.boardSize).includes(index)) {
               this.playerTurn = false;
               let damage = Math.round(Math.max(hero.attack - villain.character.defence, hero.attack * 0.1));
               villain.character.health -= damage;
               this.gamePlay.gameState.score += damage;
-              this.gamePlay.showDamage(index, damage).then(() => {this.gamePlay.redrawPositions(this.charsArray)});
+              this.gamePlay.showDamage(index, damage).then(() => {this.gamePlay.redrawPositions(this.charsArray)})
               if (villain.character.health <= 0) {
                 this.charsArray = this.charsArray.filter(char => char.position != villain.position);
                 this.gamePlay.deselectCell(villain.position);
                 this.gamePlay.redrawPositions(this.charsArray);
-              }
+              };
             }
           }
 
@@ -351,7 +340,6 @@ export default class GameController {
       this.gamePlay.setCursor('not-allowed');
       setTimeout(() => {this.villainCoreLogic();
         this.gamePlay.setCursor(this.cursorState);
-        console.log(this.gamePlay)
         this.gamePlay.cells.forEach(cell => {if (!cell.classList.contains('selected-yellow')) {
           this.gamePlay.deselectCell(this.gamePlay.cells.indexOf(cell))
           }
@@ -390,7 +378,7 @@ export default class GameController {
         this.gamePlay.gameState.level += 1;
         let background = this.gamePlay.gameState.updateBackground(this.gamePlay.gameState.background);
         this.focusedChar = NaN;
-        setTimeout(() => this.gamePlay.drawUi(background), 1000);
+        setTimeout(() => this.gamePlay.drawUi(background), 1200);
       }
     }
   }
@@ -404,10 +392,10 @@ export default class GameController {
     let target = this.gamePlay.cells[index];
     if (target.hasChildNodes()) {
       let adventure = this.charsArray.find((char) => char.position == index);
-      this.gamePlay.showCellTooltip(this.message(adventure.character), index);
+      this.gamePlay.showCellTooltip(toolTipContent(adventure.character), index);
       if (this.isSelected()) {
         if (!this.isHero(adventure.character)){
-          if (this.getActionsRange('attack').includes(index)) {
+          if (getActionsRange('attack', this.focusedChar, this.boardSize).includes(index)) {
 
             this.getPositionedVillians().forEach(villian => this.gamePlay.deselectCell(villian.position));
             this.gamePlay.setCursor('crosshair');
@@ -424,7 +412,7 @@ export default class GameController {
     }
     else {
       if (this.isSelected() && this.focusedChar.position != index && this.playerTurn){
-        if (this.getActionsRange('move').includes(index)){
+        if (getActionsRange('move', this.focusedChar, this.boardSize).includes(index)){
             this.gamePlay.selectCell(index, 'green')
         }
         else {

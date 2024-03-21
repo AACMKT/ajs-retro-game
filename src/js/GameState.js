@@ -3,6 +3,7 @@ export default class GameState {
     this.level = 1;
     this.positionedAdventures = [];
     this.focusedChar = null;
+    this.playerTurn = true;
     this.background = 'prairie';
     this.score = 0;
   }

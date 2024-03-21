@@ -8,8 +8,8 @@ export default class Undead extends Character {
     this.moveRange = 4;
     this.attackRange = 1;
     if (this.level > 1){
-      this.attack = Math.ceil(this.attack +  (this.attack*0.2)*level);
-      this.defence = Math.ceil(this.defence*1.1 + (this.defence*0.1)*level);
+      this.attack = Math.ceil(this.attack +  (this.attack*0.2)*this.level);
+      this.defence = Math.ceil(this.defence*1.1 + (this.defence*0.1)*this.level);
     }
   }
 }

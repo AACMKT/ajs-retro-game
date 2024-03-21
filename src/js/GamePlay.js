@@ -115,7 +115,6 @@ export default class GamePlay {
       mode = 'continue';
     }
     let modalBox = document.createElement('div');
-    console.log(this.modal)
     this.modal.classList.add('modal_visibility')
     modalBox.classList.add('modal__box');
     let textBox = document.createElement('h1');

@@ -8,9 +8,8 @@ export default class Daemon extends Character {
     this.moveRange = 1;
     this.attackRange = 4;
     if (this.level > 1){
-      this.attack = Math.ceil(this.attack +  (this.attack*0.2)*level);
-      this.defence = Math.ceil(this.defence*1.1 + (this.defence*0.1)*level);
-      console.log('villian', this.attack)
+      this.attack = Math.ceil(this.attack +  (this.attack*0.2)*this.level);
+      this.defence = Math.ceil(this.defence*1.1 + (this.defence*0.1)*this.level);
     }
   }
 }
